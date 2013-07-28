@@ -12,6 +12,13 @@ wash[,2:30] = data.frame(p)[,2:30]
 wash$tot = rowSums(wash[2:25])
 wash$date = strptime(as.character(wash$date),format = '%m/%d/%Y')
 
+wash$OH = rowSums(wash[10:19])
+wash$weekend = weekdays(wash$date, abbreviate = T) %in% c("Sat","Sun")
+
+source('season.R')
+wash$season = getSeason(wash$date)
+
+source('wunder.R')
 
 # ts
 library(xts)
