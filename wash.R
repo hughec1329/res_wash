@@ -141,13 +141,76 @@ ts.w.holy = ts(w.holy, start = c(2008,22), frequency = 52)
 plot(decompose(ts.w.holy))             # still too much var. keep additive as fits with data and makes sense
 plot(decompose(ts.m.holy))             # better, but hjave lost seasonalit
 
+# merge weather and data
 holy$datechar = as.character(holy$date) # mergre cant handle dates so convert to char
 w$datechar = as.character(w$date)
 all = merge(holy,w,by = 'datechar')
 all = all[,c(-1,-36)]
+all$day = factor(all$day)
+all$season = factor(all$season)              # categorise what needs to be.
 
-mod = lm(tot ~ weekend + day + season + hasRain + sun,data = o)
+# EDA
+boxplot(tot ~ hasRain, data = all)
+boxplot(tot ~ season, data = all)      # autumn lowest
+all$season = relevel(all$season, 'Autumn') # relevel so autumn is ref
+boxplot(tot ~ day, data = all)
+tapply(all$tot, all$day, mean)         # wed is lowest
+all$day = relevel(all$day, 'Wednesday')
+ ggplot(aes(day,tot), data = all) +  geom_boxplot()
+
+# modelling
+max.mod = lm(tot ~ tot + weekend + day + season + rain + maxtemp + mintemp + sun + hasRain + isSun, data = all)
+summary(max.mod)
+stepAIC(max.mod)
+
+
+mod = lm(tot ~ day + season + hasRain + sun,data = all,na.action = na.exclude ) # winter coeff is only positive seasonal?? 
+summary(mod)
+# cannot include weekend and day in as perfectly collinear.
+mod = lm(tot ~ weekend + season + hasRain + sun,data = all,na.action = na.exclude ) # summer still negative?
+summary(mod)
+mod = lm(tot ~ day + season ,data = all,na.action = na.exclude ) # summer still negative?
+summary(mod)                           # thurs, tue not important, rest sig and coef add up.
+mod = lm(tot ~ day + season + hasRain,data = all,na.action = na.exclude ) #  add rain
+summary(mod)                           # large r2 increase(15 -> 34), coef still good.
+mod = lm(tot ~ day + season + hasRain + maxtemp,data = all,na.action = na.exclude )  # add temp - as continous
+summary(mod)                           # small r2 jump, temp not worth it.
+mod = lm(tot ~ day + season + hasRain + isSun,data = all,na.action = na.exclude ) 
+summary(mod)                           #  # sun is collinear?? reversal of summer sign
+table(all$isSun, all$season)           # summer winter v close
+vif(mod)                               # as expected is sun and season v collinear
+mod = lm(tot ~ day + hasRain + season,data = all,na.action = na.exclude ) 
+summary(mod)
+mod = lm(tot ~ day + hasRain + isSun,data = all,na.action = na.exclude ) 
+summary(mod)                           # sun better than season
+
+cor(all$sun, all$rain,use = 'complete.obs') # neg cor bt sun and rain  -expected.
+cor(all$maxtemp, all$sun,use = 'complete.obs') # neg cor bt sun and rain  -expected.
+cor(all$maxtemp, all$rain,use = 'complete.obs') # neg cor bt sun and rain  -expected.
+table(all$isSun, all$season)           # sun cor w season
+tapply(all$maxtemp, all$isSun, mean)
+tapply(all$mintemp, all$isSun, mean)
+boxplot(mintemp ~ season, data = all)
+boxplot(maxtemp ~ season, data = all)  
+
+mod = lm(tot ~ day + hasRain + isSun,data = all,na.action = na.exclude ) 
+summary(mod)
+mod = lm(tot ~ day + hasRain + isSun + maxtemp,data = all,na.action = na.exclude ) 
+summary(mod)                           # max temp adds nothing
+mod = lm(tot ~ day + hasRain + isSun + mintemp,data = all,na.action = na.exclude ) 
+summary(mod)                           # mintemp good predictor, but coefficinet backwards - as mintemperature increases, less washes??
+
+########
+# final model
+#######
+
+mod = lm(tot ~ day + hasRain + isSun,data = all,na.action = na.exclude ) 
 summary(mod)
 
-mod = lm(tot ~ hasRain + sun,data = o)
-summary(mod)
+library(car)
+anova(mod)
+vif(mod)                               # no colin
+plot(rstandard(mod))                   # some large student resids
+influencePlot(mod)                     # no big lev or distances, strange (temporal??) pattern?
+hist(rstandard(mod))                   # noraml.
+
