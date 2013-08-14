@@ -214,3 +214,13 @@ plot(rstandard(mod))                   # some large student resids
 influencePlot(mod)                     # no big lev or distances, strange (temporal??) pattern?
 hist(rstandard(mod))                   # noraml.
 
+pred.mod = predict(mod)
+plot(pred.mod,type = "l")
+
+# from http://druedin.com/2012/08/11/moving-averages-in-r/
+mav <- function(x,n=5){filter(x,rep(1/n,n), sides=2)}
+
+plot(mav(pred.mod, 7))                 # predictions look good!
+
+
+# next - set control linmits and see how many alerts thrown over in sample data
