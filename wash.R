@@ -39,7 +39,9 @@ port$wash = "port"
 zoo.port = zoo(port$tot, order.by = port$date)
 holy = load("holy.Rdata")
 holy = wash
+holy = holy[-1:-3,]
 holy$wash = "holy"
+zoo.holy = zoo(holy$tot, order.by = holy$date)
 wash = rbind(holy, gw, port)
 wash = wash[-1:-3,]
 wash$date = as.Date(wash$date)
@@ -49,6 +51,23 @@ wzoo = zoo(wash, order.by = wash$date)
 
 plot(apply.weekly(zoogw, mean))
 lines(apply.monthly(zoo.gw,mean),col = "red")
+
+holy = load("holy.Rdata")
+holy = wash
+holy = holy[-1:-3,]
+zoo.holy = zoo(holy$tot, order.by = holy$date)
+w.holy = apply.weekly(zoo.holy, mean)
+m.holy = apply.monthly(zoo.holy, mean)
+plot(w.holy)                           # distinct seasonality
+plot(m.holy)                           # losing some
+ts.m.holy = ts(m.holy, start = c(2008,5), frequency = 12) # need ts to decomp
+ts.w.holy = ts(w.holy, start = c(2008,22), frequency = 52)
+plot(decompose(ts.w.holy))             # still too much var.
+plot(decompose(ts.m.holy))             # better, but hjave lost seasonality?
+
+
+plot(decompose(w.holy))
+
 
 library(ggplot2)
 ggplot(aes(x=date, y = tot, color = wash), data = wash[wash$date > as.Date("2012-05-10"),]) + geom_line()
@@ -62,28 +81,70 @@ tapply(gw$tot, gw$day, function(i) mean(i, na.rm = T))
 library(xts)
 wts = ts(wash$date, wash$tot)
 		
+###################
 # getting weather
-
+####################
 	
+
+# ended up using data from form at http://www.bom.gov.au/climate/data/, possible could automate through file name. 
+
+# ftp only has current data and forecasts
+
+# below will get daily weather observations with last 14 months available. from http://www.bom.gov.au/climate/dwo/IDCJDW5002.latest.shtml
 years = unlist(lapply(2008:2013,function(i) paste(i,c(paste("0",1:9,sep = ""),10:12),sep = "")))
 urls = sprintf("http://www.bom.gov.au/climate/dwo/%s/text/IDCJDW5002.%s.csv",years[1:67],years[1:67])
-
+urlss = urls[54:67]                    # as only last 14 months available
+weatherr = o[1,]
 sapply(urlss, function(i) {
 	her = read.csv(i,skip = 8,header = F)
 	weatherr = rbind(weatherr,her)
 })
-
 for(i in 1:14) {
 	paste('ur',i) = read.csv(urlss[i],skip = 8,header = F)
 	# rbind(weatherr,weather)
 }
-
 names(ur) = c("na","date","minT","maxT","rain","evap","sun")
-
 write.csv(o,file = "complete.csv")
 
-o$hasRain = o$rain > 0 
 
+read.csv("complete.csv")
+
+### real weather - manually compiled from airport data.
+
+weather = read.csv('airportweather.csv') # get data 
+weather$date = strptime(apply(weather, 1,function(i) paste(i[1],i[2],i[3], sep = '-')),format = "%Y-%m-%d")
+w = weather[,c(8,4:7)]
+w$hasRain  <-  w$rain>0                # make categorical for wet or not
+
+hist(w$sun)                            # look at solar radiation and try to figure out threshold
+plot(w$sun)                            # very seasonal - collinearity if include season and this??
+# source('season.R')                     # import getSeason function
+# w$season = factor(getSeason(w$date))   # set season
+boxplot(sun ~ season, data = w)        # outliers even in summer = cloudy days. 
+tapply(w$sun, w$season, function(i) mean(i, na.rm = T)) # chose cutoff of 20 as sunny day
+w$isSun  <- w$sun>20
+
+# modelling on hollywood as only one with data.
+
+holy = load("holy.Rdata")
+holy = wash
+holy = holy[-1:-3,]
+zoo.holy = zoo(holy$tot, order.by = holy$date)
+w.holy = apply.weekly(zoo.holy, mean)
+m.holy = apply.monthly(zoo.holy, mean)
+plot(w.holy)                           # distinct seasonality
+plot(m.holy)                           # losing some
+ts.m.holy = ts(m.holy, start = c(2008,5), frequency = 12) # need ts to decomp
+ts.w.holy = ts(w.holy, start = c(2008,22), frequency = 52)
+
+
+plot(decompose(ts.w.holy))             # still too much var. keep additive as fits with data and makes sense
+plot(decompose(ts.m.holy))             # better, but hjave lost seasonalit
+
+holy$datechar = as.character(holy$date) # mergre cant handle dates so convert to char
+w$datechar = as.character(w$date)
+all = merge(holy,w,by = 'datechar')
+all = all[,c(-1,-36)]
 
 mod = lm(tot ~ weekend + day + season + hasRain + sun,data = o)
 summary(mod)

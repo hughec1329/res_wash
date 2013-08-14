@@ -6,7 +6,11 @@
 ### weather
 - http://casoilresource.lawr.ucdavis.edu/drupal/node/991
 - http://billalex.wordpress.com/2013/04/30/r-weather/
-- ended up pollin glast 6 years from bom and writing script to strip out - now in r data frame 'weather.r'
+
+- polled last 14 months from bom (http://www.bom.gov.au/climate/dwo/IDCJDW5002.latest.shtml) and writing script to strip out - now in 'weather.csv
+
+- ended up using data from form at http://www.bom.gov.au/climate/data/, possible could automate through file name. in file airportweather.csv
+- ftp only has current data and forecasts
 
 ### dashboarding/displaying
 - http://binalytics.wordpress.com/2012/06/18/quick-web-app-with-r-rook-and-ggplot2-for-a-stock-symbol-candle-chart/ using rook and ggplot
@@ -42,9 +46,9 @@
 
 ### independent
 - weather - can scrape from BOM, GSOD??
--- sunlight
--- precipitation
--- temperature
+-- sunlight - threshold to categorical?
+-- precipitation - binary?
+-- temperature - threshold??
 - weekend vs weekday
 - public holiday
 - season - 2 or 4?? - categorical.
