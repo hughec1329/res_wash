@@ -29,8 +29,34 @@ save(wash, file = "gw.Rdata")
 save(wash, file = "port.Rdata")
 save(wash, file = "holy.Rdata")
 
+gw = load("gw.Rdata")
+gw = wash
+zoo.gw = zoo(gw$tot, order.by = gw$date)
+gw$wash = "gw"
+port = load("port.Rdata")
+port = wash
+port$wash = "port"
+zoo.port = zoo(port$tot, order.by = port$date)
+holy = load("holy.Rdata")
+holy = wash
+holy$wash = "holy"
+wash = rbind(holy, gw, port)
+wash = wash[-1:-3,]
+wash$date = as.Date(wash$date)
+table(wash$wash)
+
+wzoo = zoo(wash, order.by = wash$date)
+
+plot(apply.weekly(zoogw, mean))
+lines(apply.monthly(zoo.gw,mean),col = "red")
+
+library(ggplot2)
+ggplot(aes(x=date, y = tot, color = wash), data = wash[wash$date > as.Date("2012-05-10"),]) + geom_line()
 
 
+tapply(holy$tot, holy$day, function(i) mean(i, na.rm = T))
+tapply(port$tot, port$day, function(i) mean(i, na.rm = T))
+tapply(gw$tot, gw$day, function(i) mean(i, na.rm = T))
 
 # ts
 library(xts)
