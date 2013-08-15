@@ -17,8 +17,16 @@
 - better dynamic server - shiny
 - http://www.rstudio.com/shiny/
 - https://github.com/rstudio/shiny-server/wiki/Ubuntu-step-by-step-install-instructions - host locally.
-- https://github.com/ramnathv/dashifyr - dashboarding framework using js plugins knob rcharts and shiny server
+- https://github.com/ramnathv/dashifyr - dashboarding framework using js plugins knob rcharts and shiny server - looks much harder to use than shinydash - need js
+
+#### shinydash - more suited to future dynamic plots w data fed in??
 - https://github.com/trestletech/ShinyDash - another dashboard built on shiny server and js
+- nned to install gridster js library somehow?? http://gridster.net/
+- awesome example, exactly what we need - http://glimmer.rstudio.com/winstontest/shiny-jsdemo/
+
+#### presentation - slidify
+- use html slides w inline r - like sweave but nicer to look at.
+- slides w day, season etc
 
 ### js libraries
 - rcharts - highcharts
@@ -55,4 +63,6 @@
 
 - demographics - population, 
 - shopping centre numbers>?? can get?
+
+# findings
 
