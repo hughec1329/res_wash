@@ -136,6 +136,7 @@ plot(w.holy)                           # distinct seasonality
 plot(m.holy)                           # losing some
 ts.m.holy = ts(m.holy, start = c(2008,5), frequency = 12) # need ts to decomp
 ts.w.holy = ts(w.holy, start = c(2008,22), frequency = 52)
+ts.d.holy = ts(holy$tot, start = c(2008,171), frequency = 365)
 
 
 plot(decompose(ts.w.holy))             # still too much var. keep additive as fits with data and makes sense
@@ -157,6 +158,25 @@ boxplot(tot ~ day, data = all)
 tapply(all$tot, all$day, mean)         # wed is lowest
 all$day = relevel(all$day, 'Wednesday')
  ggplot(aes(day,tot), data = all) +  geom_boxplot()
+
+plot(tot ~ rain, data = all)           # rain good predictor
+boxplot(tot ~ hasRain, data = all)     # 1sd close to being different
+
+plot(tot ~ sun, data = all)            # sun looks good too
+boxplot(tot ~ isSun, data = all)     # 1sd close to being different
+all$isSun  <- all$sun>20
+all$isSun2  <- all$sun>12              # look at plot sees drop off at 12
+par(mfrow=c(1,2))
+boxplot(tot ~ isSun, data = all,main = 'split = 20')     # better split
+boxplot(tot ~ isSun2, data = all,main = 'split = 12')     # better split
+par(mfrow=c(1,1))
+
+plot(tot ~ maxtemp, data = all)
+plot(tot ~ mintemp, data = all)        # no real pattern in temperature
+
+
+
+
 
 # modelling
 max.mod = lm(tot ~ tot + weekend + day + season + rain + maxtemp + mintemp + sun + hasRain + isSun, data = all)
@@ -200,27 +220,68 @@ summary(mod)                           # max temp adds nothing
 mod = lm(tot ~ day + hasRain + isSun + mintemp,data = all,na.action = na.exclude ) 
 summary(mod)                           # mintemp good predictor, but coefficinet backwards - as mintemperature increases, less washes??
 
+mod = lm(tot ~ day + hasRain + isSun,data = all,na.action = na.exclude ) 
+mod2 = lm(tot ~ day + hasRain + isSun2,data = all,na.action = na.exclude ) 
+summary(mod)
+summary(mod2)                          # r2 increases w lower split
+
+
+
+
+
 ########
-# final model
+# final model using climate data
 #######
 
-mod = lm(tot ~ day + hasRain + isSun,data = all,na.action = na.exclude ) 
-summary(mod)
+clim.mod = lm(tot ~ day + hasRain + isSun2,data = all,na.action = na.exclude ) 
+summary(clim.mod)
 
 library(car)
-anova(mod)
-vif(mod)                               # no colin
-plot(rstandard(mod))                   # some large student resids
-influencePlot(mod)                     # no big lev or distances, strange (temporal??) pattern?
-hist(rstandard(mod))                   # noraml.
+anova(clim.mod)
+vif(clim.mod)                               # no colin
+plot(rstandard(clim.mod))                   # some large student resids
+influencePlot(clim.mod)                     # no big lev or distances, strange (temporal??) pattern?
+hist(rstandard(clim.mod))                   # noraml.
 
-pred.mod = predict(mod)
+pred.mod = predict(clim.mod)
 plot(pred.mod,type = "l")
 
 # from http://druedin.com/2012/08/11/moving-averages-in-r/
 mav <- function(x,n=5){filter(x,rep(1/n,n), sides=2)}
 
-plot(mav(pred.mod, 7))                 # predictions look good!
+ma.pred = mav(pred.mod, 7)
+plot(ma.pred)                          # predictions look good!
+ma.pred = mav(pred.mod, 14)
+plot(ma.pred)                          # 14 d better
 
+mean(all$tot)
+sdd = (ma.pred - all$tot)/mean(all$tot)      # ~SD
+plot(sdd)                              # massive var - preds are one mean above actual
+
+ma.actual = mav(all$tot,14)
+sdd = (ma.pred - ma.actual)/mean(all$tot)      # ~SD
+plot(sdd)                              # 14d rolling average better
+acf(sdd)
+
+sum(sdd>0.3,na.rm = T)                 # 55 at 0.3 sd limit
+plot(sdd>0.3)                 # 55 at 0.3 sd limit
+plot(sdd<-0.3,na.rm = T)                 # 55 at 0.3 sd limit
+all$date.x[which(sdd>0.3)]                 # 55 at 0.3 sd limit
+
+sddNA = na.approx(sdd)
+sdd.holy = ts(sddNA, start = c(2008,171), frequency = 365) # throw to ts so can use decomp etc
+plot(decompose(sdd.holy))              # still seasonality, 
+plot(decompose(sdd.holy)$seasonal[194:559],type = "l") # low in winter, high in summer.
+acf(sdd.holy)                          # signifignat autocorrelation
+spec.pgram(sdd.holy)                   # another method of finding season, unsing Fourier - need to learn? FFT?
+
+
+
+########
+# final model NO climate data
+#######
+
+mod = lm(tot ~ day + season ,data = all,na.action = na.exclude ) #  add rain
+summary(mod)                           # large r2 increase(15 -> 34), coef still good.
 
 # next - set control linmits and see how many alerts thrown over in sample data
