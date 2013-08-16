@@ -25,8 +25,11 @@
 - awesome example, exactly what we need - http://glimmer.rstudio.com/winstontest/shiny-jsdemo/
 
 #### presentation - slidify
-- use html slides w inline r - like sweave but nicer to look at.
+- use html slides w inline r - like sweave but nicer to look at. can include rCharts by saving as html then loading.. look at tester.html
 - slides w day, season etc
+- 
+## final pres
+- use slidyfy w embedded r charts - e.g. 'tester'
 
 ### js libraries
 - rcharts - highcharts
@@ -65,4 +68,7 @@
 - shopping centre numbers>?? can get?
 
 # findings
+- day mix per wash in multibarchart
+- season vs rain and sun - justify using climate data.
+- 
 
